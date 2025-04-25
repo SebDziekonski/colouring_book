@@ -6,6 +6,10 @@ from utils.idea_generator import generate_coloring_ideas
 from utils.image_generator import generate_images
 from utils.session_manager import save_session, load_session, delete_session, list_sessions
 import uuid
+from dotenv import load_dotenv
+
+load_dotenv()
+default_key = os.getenv("OPENAI_API_KEY", "")
 
 # App styling
 st.set_page_config(page_title="Kids Coloring Book Generator", layout="wide")
@@ -22,7 +26,7 @@ if "user_api_key" not in st.session_state:
 
 # Ask for OpenAI API key
 st.sidebar.title("🔐 API Key Required")
-st.session_state.user_api_key = st.sidebar.text_input("Enter your OpenAI API Key", type="password", value=st.session_state.user_api_key)
+st.session_state.user_api_key = st.sidebar.text_input("Enter your OpenAI API Key", type="password", value=st.session_state.user_api_key or default_key)
 if not st.session_state.user_api_key:
     st.sidebar.warning("API key required to use the app.")
     st.stop()
