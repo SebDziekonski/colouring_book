@@ -1,7 +1,6 @@
 import json
 import os
 import shutil
-import time
 
 SESSION_DIR = "sessions"  # Folder where session files will be saved
 IMAGE_DIR = os.path.join(SESSION_DIR, "images")
@@ -15,7 +14,7 @@ def save_session(session_name, topic, ideas, image_paths):
         session_data = {
             "topic": topic,
             "ideas": list(ideas),
-            "image_paths": list(image_paths)  # Save the local paths to images
+            "image_paths": list(image_paths)
         }
 
         session_file = os.path.join(SESSION_DIR, f"{session_name}.json")
@@ -38,30 +37,25 @@ def load_session(session_name):
             data = json.load(f)
 
         return data.get("topic", ""), data.get("ideas", []), data.get("image_paths", [])
-
     except Exception as e:
         print("❌ Error loading session:", e)
         return None, [], []
 
+def list_sessions():
+    return [f.replace(".json", "") for f in os.listdir(SESSION_DIR) if f.endswith(".json")]
+
 def delete_session(session_name):
     try:
+        # Delete session file
         session_file = os.path.join(SESSION_DIR, f"{session_name}.json")
-        image_folder = os.path.join(IMAGE_DIR, session_name)
-
         if os.path.exists(session_file):
             os.remove(session_file)
 
-        if os.path.exists(image_folder):
-            time.sleep(0.5)  # Give Streamlit time to release any file locks
-
-            # Retry deletion a few times in case of Windows file locking
-            for _ in range(3):
-                try:
-                    shutil.rmtree(image_folder)
-                    break
-                except PermissionError:
-                    time.sleep(0.5)
-
-        print(f"✅ Session '{session_name}' deleted.")
+        # Delete images folder associated with the session
+        session_image_dir = os.path.join(IMAGE_DIR, session_name)
+        if os.path.exists(session_image_dir):
+            shutil.rmtree(session_image_dir)
+        return True
     except Exception as e:
-        print(f"❌ Error deleting session: {e}")
+        print("❌ Error deleting session:", e)
+        return False
