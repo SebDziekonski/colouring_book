@@ -1,6 +1,8 @@
+import base64
 import streamlit as st
 import os
 import requests
+import openai
 from datetime import datetime
 from utils.idea_generator import generate_coloring_ideas
 from utils.image_generator import generate_images
@@ -50,25 +52,80 @@ if "image_paths" not in st.session_state:
 if "user_api_key" not in st.session_state:
     st.session_state.user_api_key = ""
 
-# --------------- SIDEBAR - API KEY ---------------
-st.sidebar.title("🔐 API Settings")
-st.session_state.user_api_key = st.sidebar.text_input(
-    "Enter your OpenAI API Key",
-    type="password",
-    value=st.session_state.user_api_key
-)
-if not st.session_state.user_api_key:
-    st.sidebar.warning("Please enter your OpenAI API key to use the app.")
+    # --------------- API KEY GATE (LOCK SCREEN) ---------------
 
-st.header("Welcome to Coloruring Book Generator!!")
+# Ensure state tracking
+if "api_valid" not in st.session_state:
+    st.session_state.api_valid = False
+if "user_api_key" not in st.session_state:
+    st.session_state.user_api_key = ""
+
+if not st.session_state.api_valid:
+    st.title("🔐 Welcome to Draw-a-Book!")
+    st.markdown("Please enter your OpenAI API key to access the app.")
+    
+    with st.form("api_key_form"):
+        key_input = st.text_input("Enter your OpenAI API Key", type="password")
+        submit = st.form_submit_button("🔓 Unlock")
+
+        if submit:
+            try:
+                # Quick test to validate API key
+                client = openai.OpenAI(api_key=key_input)
+                client.models.list()
+                st.session_state.user_api_key = key_input
+                st.session_state.api_valid = True
+                st.experimental_rerun()  # Refresh app without showing input again
+            except Exception:
+                st.error("❌ Invalid API key. Please try again.")
+
+    st.stop()  # Prevent the rest of the app from loading
+
+# # --------------- SIDEBAR - API KEY ---------------
+# st.sidebar.title("🔐 API Settings")
+# st.session_state.user_api_key = st.sidebar.text_input(
+#     "Enter your OpenAI API Key",
+#     type="password",
+#     value=st.session_state.user_api_key
+# )
+# if not st.session_state.user_api_key:
+#     st.sidebar.warning("Please enter your OpenAI API key to use the app.")
+
+# ------- Logo Display --------
+def get_image_base64(path):
+    with open(path, "rb") as f:
+        return base64.b64encode(f.read()).decode()
+
+logo_base64 = get_image_base64("logo.png")  
+
+st.markdown(
+    f"""
+    <div style='display: flex; align-items: center; gap: 16px; margin-top: 20px;'>
+        <img src='data:image/png;base64,{logo_base64}' width='50'>
+        <h1 style='color: #ff6f61; font-size: 2.25rem; margin: 0;'>Draw-a-Book</h1>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 # --------------- TABS ---------------
 tab1, tab2, tab3 = st.tabs(["🖍️ Generate", "📚 View Sessions", "🗑️ Delete Sessions"])
 
 # ========== TAB 1: GENERATE ==========
 with tab1:
-    st.header("🖍️ Let's Make Some Coloring Pages!")
-    st.markdown("Choose your theme and let the AI help draw the fun!")
+    st.header("🎨 Welcome to Coloruring Book Generator!!")
+    st.markdown("""
+        Welcome to the **Coloring Book  Creator**! 🖍️✨  
+        Here’s what you can do on this page:
+
+        - 🎯 Enter a fun topic like **Space Adventures**, **Dancing Dinosaurs**, or **Underwater Castles**  
+        - 🤖 Let the AI dream up creative coloring ideas based on your topic  
+        - 🖼️ Generate beautiful black-and-white images ready to print and color  
+        - 💾 Save your session to build your very own custom coloring book!
+
+        Whether you're making pages for yourself or a whole book to share with others, you're in the right place.  
+        **Ready to get creative? Choose a topic and start generating your magical coloring pages below! 🚀🖌️**
+        """)
 
     topic = st.text_input("🧠 Topic (e.g. Space Adventures)", "Jungle Animals")
     num_images = st.slider("🖼️ How many images to generate?", 1, 10, 3)
@@ -113,6 +170,18 @@ with tab1:
 # ========== TAB 2: VIEW ==========
 with tab2:
     st.header("📚 Browse Saved Sessions")
+    st.markdown("""
+    Welcome to your **Coloring Book Library**! 📁✨  
+    Here's where all your saved coloring sessions live.
+
+    - 🔍 Select a saved session from the dropdown list  
+    - 🖼️ View the AI-generated images and their creative prompts  
+    - ⬇️ Download your favorite pictures to print or share with friends  
+
+    This is your creative archive — perfect for revisiting magical ideas or printing pages whenever you want.  
+    **Explore your saved sessions below and relive the fun! 🎨📖**
+    """)
+
     sessions = list_sessions()
     if sessions:
         selected = st.selectbox("Choose a session", sessions)
@@ -131,6 +200,17 @@ with tab2:
 # ========== TAB 3: DELETE ==========
 with tab3:
     st.header("🗑️ Manage and Delete Sessions")
+    st.markdown("""
+    Welcome to the **Cleanup Corner**! 🧹🗂️  
+    Here you can manage your coloring book sessions.
+
+    - 🧾 Select a session you'd like to remove from your library  
+    - ❌ Click the delete button to tidy up your saved creations  
+    - 🚨 Don’t worry — this won’t delete anything unless you choose to!
+
+    Keeping your coloring book space organized makes room for even more fun and fresh ideas.  
+    **Ready to clean up? Pick a session and give it a little goodbye wave! 👋🖍️**
+    """)
     sessions = list_sessions()
     if sessions:
         selected = st.selectbox("Select a session to delete", sessions, key="delete_selector")

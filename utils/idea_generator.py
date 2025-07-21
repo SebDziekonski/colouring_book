@@ -1,16 +1,14 @@
+
 import openai
 import instructor
 from pydantic import BaseModel
 from typing import List
 
-# Patch OpenAI client to use instructor
-client = instructor.from_openai(openai.OpenAI())
-
 class ColoringIdeas(BaseModel):
     ideas: List[str]
 
 def generate_coloring_ideas(topic: str, count: int, api_key: str) -> List[str]:
-    openai.api_key = api_key
+    client = instructor.from_openai(openai.OpenAI(api_key=api_key))  # Dynamically patched client
 
     prompt = (
         f"Generate a list of {count} fun and creative ideas for a children's coloring book. "
