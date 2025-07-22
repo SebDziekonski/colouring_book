@@ -115,7 +115,7 @@ tab1, tab2, tab3 = st.tabs(["🖍️ Generate", "📚 View Sessions", "🗑️ D
 with tab1:
     st.header("🎨 Welcome to Coloruring Book Generator!!")
     st.markdown("""
-        Welcome to the **Coloring Book  Creator**! 🖍️✨  
+        Welcome to the **Coloring Book Creator**! 🖍️✨  
         Here’s what you can do on this page:
 
         - 🎯 Enter a fun topic like **Space Adventures**, **Dancing Dinosaurs**, or **Underwater Castles**  
@@ -125,7 +125,7 @@ with tab1:
 
         Whether you're making pages for yourself or a whole book to share with others, you're in the right place.  
         **Ready to get creative? Choose a topic and start generating your magical coloring pages below! 🚀🖌️**
-        """)
+    """)
 
     topic = st.text_input("🧠 Topic (e.g. Space Adventures)", "Jungle Animals")
     num_images = st.slider("🖼️ How many images to generate?", 1, 10, 3)
@@ -153,17 +153,25 @@ with tab1:
                     f.write(image_data)
                 st.session_state.image_paths.append(img_path)
 
-            st.success("✅ Images generated! Scroll down to preview and save your session.")
-            for i, path in enumerate(st.session_state.image_paths):
-                st.image(path, caption=st.session_state.ideas[i])
+            # Save display state
+            st.session_state.last_topic = topic
+            st.session_state.last_ideas = st.session_state.ideas
+            st.session_state.generated_session = session_name
 
-            # Save form
-            st.subheader("💾 Save This Session")
-            custom_name = st.text_input("Session name (optional)", "")
-            final_session_name = custom_name if custom_name else session_name
-            if st.button("✅ Save Session"):
-                save_session(final_session_name, topic, st.session_state.ideas, st.session_state.image_paths)
-                st.success(f"Session '{final_session_name}' saved successfully!")
+            st.success("✅ Images generated! Scroll down to preview and save your session.")
+
+    # Always show current images
+    if st.session_state.get("image_paths"):
+        st.subheader(f"🖼️ Your Coloring Pages for: {st.session_state.get('last_topic', '')}")
+        for i, path in enumerate(st.session_state.image_paths):
+            st.image(path, caption=st.session_state.last_ideas[i])
+
+        st.subheader("💾 Save This Session")
+        custom_name = st.text_input("Session name (optional)", "")
+        final_session_name = custom_name if custom_name else st.session_state.generated_session
+        if st.button("✅ Save Session"):
+            save_session(final_session_name, st.session_state.last_topic, st.session_state.last_ideas, st.session_state.image_paths)
+            st.success(f"Session '{final_session_name}' saved successfully!")
 
 
 
@@ -188,7 +196,11 @@ with tab2:
         if st.button("📥 Load Session"):
             topic, ideas, image_paths = load_session(selected)
             if topic:
-                st.subheader(f"Topic: {topic}")
+                st.session_state.image_paths = image_paths
+                st.session_state.last_ideas = ideas
+                st.session_state.last_topic = topic
+
+                st.subheader(f"🖼️ Coloring Pages from '{selected}'")
                 for i, img_path in enumerate(image_paths):
                     st.image(img_path, caption=ideas[i])
                     st.download_button("Download", open(img_path, "rb"), file_name=os.path.basename(img_path), key=f"dl_{i}")
@@ -196,6 +208,7 @@ with tab2:
                 st.warning("Could not load session.")
     else:
         st.info("No saved sessions found. Go generate something cool!")
+
 
 # ========== TAB 3: DELETE ==========
 with tab3:
